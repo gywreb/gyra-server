@@ -20,7 +20,7 @@
 # Dependencies Install
 npm install
 # or
-yarn install
+yarn
 ```
 
 #### 2. Run
