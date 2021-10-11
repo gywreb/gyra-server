@@ -43,4 +43,11 @@ const login = asyncMiddleware(async (req, res, next) => {
     .json(new SuccessResponse(200, { token, userInfo: payload }));
 });
 
-export default { register, login };
+const getCurrent = asyncMiddleware(async (req, res, next) => {
+  const authUser = req.user._doc;
+  if (!authUser) return next(new ErrorResponse(401, 'unauthorized'));
+  const userInfo = omit(authUser, 'password', '__v');
+  res.json(new SuccessResponse(200, { userInfo }));
+});
+
+export default { register, login, getCurrent };

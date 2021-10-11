@@ -34,6 +34,36 @@ const UserSchema = new Schema(
       type: String,
       default: null,
     },
+    tasks: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Task',
+      },
+    ],
+    projects: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Project',
+      },
+    ],
+    people: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    pendingUser: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    notifications: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Activity',
+      },
+    ],
   },
   { timestamps: true, id: false, toJSON: { virtuals: true } }
 );
