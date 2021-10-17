@@ -1,6 +1,6 @@
-import { ErrorResponse } from '../models/ErrorResponse';
+const { ErrorResponse } = require('../models/ErrorResponse');
 
-export const basicAuth = (req, res, next) => {
+exports.basicAuth = (req, res, next) => {
   let token;
   if (
     req.headers.authorization &&

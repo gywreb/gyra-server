@@ -1,7 +1,8 @@
-import User from '../database/models/User';
-import { ErrorResponse } from '../models/ErrorResponse';
+const User = require('../database/models/User');
+const { ErrorResponse } = require('../models/ErrorResponse');
+const jwt = require('jsonwebtoken');
 
-export const jwtAuth = async (req, res, next) => {
+exports.jwtAuth = async (req, res, next) => {
   let token;
   if (
     req.headers.authorization &&

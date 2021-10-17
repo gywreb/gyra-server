@@ -1,14 +1,15 @@
-import { model, Schema } from 'mongoose';
+const mongoose = require("mongoose");
+const { model, Schema } = mongoose;
 
 const ReleaseSchema = new Schema(
   {
     name: {
       type: String,
-      required: [true, 'release name is required'],
+      required: [true, "release name is required"],
     },
     version: {
       type: String,
-      required: [true, 'release version is required'],
+      required: [true, "release version is required"],
       unique: true,
     },
     source: {
@@ -17,17 +18,21 @@ const ReleaseSchema = new Schema(
     },
     project: {
       type: Schema.Types.ObjectId,
-      ref: 'Project',
-      required: [true, 'project is required'],
+      ref: "Project",
+      required: [true, "project is required"],
+      autopopulate: true,
     },
     tasks: [
       {
         type: Schema.Types.ObjectId,
-        ref: 'Task',
+        ref: "Task",
+        autopopulate: true,
       },
     ],
   },
   { timestamps: true, id: false, toJSON: { virtuals: true } }
 );
 
-export default model('Release', ReleaseSchema, 'release');
+ReleaseSchema.plugin(require("mongoose-autopopulate"));
+
+module.exports = mongoose.model("Release", ReleaseSchema, "release");

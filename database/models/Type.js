@@ -1,25 +1,34 @@
-import { model, Schema } from 'mongoose';
+const mongoose = require("mongoose");
+const { model, Schema } = mongoose;
 
 const TypeSchema = new Schema(
   {
     name: {
       type: String,
-      required: [true, 'type name is required'],
+      required: [true, "type name is required"],
       trim: true,
       unique: true,
     },
     color: {
       type: String,
-      required: [true, 'type color is required'],
+      required: [true, "type color is required"],
+    },
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      autopopulate: true,
     },
     projects: [
       {
         type: Schema.Types.ObjectId,
-        ref: 'Project',
+        ref: "Project",
+        autopopulate: true,
       },
     ],
   },
   { timestamps: true, id: false, toJSON: { virtuals: true } }
 );
 
-export default model('Type', TypeSchema, 'type');
+TypeSchema.plugin(require("mongoose-autopopulate"));
+
+module.exports = mongoose.model("Type", TypeSchema, "type");

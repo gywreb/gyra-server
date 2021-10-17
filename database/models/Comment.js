@@ -1,23 +1,28 @@
-import { model, Schema } from 'mongoose';
+const mongoose = require("mongoose");
+const { model, Schema } = mongoose;
 
 const CommentSchema = new Schema(
   {
     sender: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'sender is required'],
+      ref: "User",
+      required: [true, "sender is required"],
+      autopopulate: true,
     },
     task: {
       type: Schema.Types.ObjectId,
-      ref: 'Task',
-      required: [true, 'task is required'],
+      ref: "Task",
+      required: [true, "task is required"],
+      autopopulate: true,
     },
     content: {
       type: String,
-      required: [true, 'comment content is required'],
+      required: [true, "comment content is required"],
     },
   },
   { timestamps: true, id: false, toJSON: { virtuals: true } }
 );
 
-export default model('Comment', CommentSchema, 'comment');
+CommentSchema.plugin(require("mongoose-autopopulate"));
+
+module.exports = mongoose.model("Comment", CommentSchema, "comment");

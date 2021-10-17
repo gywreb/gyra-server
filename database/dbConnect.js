@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
-export default class ConnectMongoDB {
+class ConnectMongoDB {
   constructor() {
     this.gfs = null;
   }
@@ -22,3 +22,5 @@ export default class ConnectMongoDB {
     });
   }
 }
+
+module.exports = ConnectMongoDB;

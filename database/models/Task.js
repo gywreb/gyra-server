@@ -1,18 +1,19 @@
-import { model, Schema } from 'mongoose';
+const mongoose = require("mongoose");
+const { model, Schema } = mongoose;
 
-const PRIORITY = ['highest', 'high', 'medium', 'low', 'lowest'];
+const PRIORITY = ["highest", "high", "medium", "low", "lowest"];
 
 const TaskSchema = new Schema(
   {
     task_key: {
       type: String,
-      required: [true, 'task key is required'],
+      required: [true, "task key is required"],
       unique: true,
       trim: true,
     },
     name: {
       type: String,
-      required: [true, 'task name is required'],
+      required: [true, "task name is required"],
       trim: true,
     },
     description: {
@@ -22,57 +23,68 @@ const TaskSchema = new Schema(
     priority: {
       type: String,
       enum: PRIORITY,
-      required: [true, 'task priority is required'],
+      required: [true, "task priority is required"],
     },
     assignee: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       default: null,
+      autopopulate: true,
     },
     reporter: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'task reporter is required'],
+      ref: "User",
+      required: [true, "task reporter is required"],
+      autopopulate: true,
     },
     project: {
       type: Schema.Types.ObjectId,
-      ref: 'Project',
-      required: [true, 'project id required'],
+      ref: "Project",
+      required: [true, "project id required"],
+      autopopulate: true,
     },
     status: {
       type: Schema.Types.ObjectId,
-      ref: 'Column',
+      ref: "Column",
       default: null,
+      autopopulate: true,
     },
     sprint: {
       type: Schema.Types.ObjectId,
-      ref: 'Sprint',
+      ref: "Sprint",
       default: null,
+      autopopulate: true,
     },
     type: {
       type: Schema.Types.ObjectId,
-      ref: 'Type',
-      required: [true, 'task type is required'],
+      ref: "Type",
+      required: [true, "task type is required"],
+      autopopulate: true,
     },
     comments: [
       {
         type: Schema.Types.ObjectId,
-        ref: 'Comment',
+        ref: "Comment",
+        autopopulate: true,
       },
     ],
     attachments: [
       {
         type: Schema.Types.ObjectId,
-        ref: 'Attachment',
+        ref: "Attachment",
+        autopopulate: true,
       },
     ],
     release: {
       type: Schema.Types.ObjectId,
-      ref: 'Release',
+      ref: "Release",
       default: null,
+      autopopulate: true,
     },
   },
   { timestamps: true, id: false, toJSON: { virtuals: true } }
 );
 
-export default model('Task', TaskSchema, 'task');
+TaskSchema.plugin(require("mongoose-autopopulate"));
+
+module.exports = mongoose.model("Task", TaskSchema, "task");

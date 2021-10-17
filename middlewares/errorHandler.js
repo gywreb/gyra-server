@@ -1,7 +1,7 @@
-import ConnectMongoDB from '../database/dbConnect';
-import { ErrorResponse } from '../models/ErrorResponse';
+const ConnectMongoDB = require('../database/dbConnect');
+const { ErrorResponse } = require('../models/ErrorResponse');
 
-export const errorHandler = (err, req, res, next) => {
+exports.errorHandler = (err, req, res, next) => {
   let errors = { ...err };
   // file error
   if (err.message && err.name === 'Error')

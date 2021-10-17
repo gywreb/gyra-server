@@ -1,11 +1,11 @@
-import User from '../database/models/User';
-import { asyncMiddleware } from '../middlewares/asyncMiddleware';
-import { ErrorResponse } from '../models/ErrorResponse';
-import { SuccessResponse } from '../models/SuccessResponse';
-import bcrypt from 'bcryptjs';
-import { omit } from 'lodash';
+const User = require('../database/models/User');
+const { asyncMiddleware } = require('../middlewares/asyncMiddleware');
+const { ErrorResponse } = require('../models/ErrorResponse');
+const { SuccessResponse } = require('../models/SuccessResponse');
+const bcrypt = require('bcryptjs');
+const { omit } = require('lodash');
 
-const register = asyncMiddleware(async (req, res, next) => {
+exports.register = asyncMiddleware(async (req, res, next) => {
   const { username, email, password } = req.body;
   const user = new User({
     username,
@@ -16,7 +16,7 @@ const register = asyncMiddleware(async (req, res, next) => {
   res.status(201).json(new SuccessResponse(201, { newUser }));
 });
 
-const login = asyncMiddleware(async (req, res, next) => {
+exports.login = asyncMiddleware(async (req, res, next) => {
   const { username, email, password } = req.body;
 
   const user =
@@ -43,11 +43,9 @@ const login = asyncMiddleware(async (req, res, next) => {
     .json(new SuccessResponse(200, { token, userInfo: payload }));
 });
 
-const getCurrent = asyncMiddleware(async (req, res, next) => {
+exports.getCurrent = asyncMiddleware(async (req, res, next) => {
   const authUser = req.user._doc;
   if (!authUser) return next(new ErrorResponse(401, 'unauthorized'));
   const userInfo = omit(authUser, 'password', '__v');
   res.json(new SuccessResponse(200, { userInfo }));
 });
-
-export default { register, login, getCurrent };
