@@ -48,3 +48,16 @@ exports.getProjects = asyncMiddleware(async (req, res, next) => {
   );
   res.status(200).json(new SuccessResponse(200, { projectList }));
 });
+
+exports.getProjectDetail = asyncMiddleware(async (req, res, next) => {
+  const authUser = req.user._doc;
+  const { id } = req.params;
+  const project = await Project.findOne({ _id: id });
+  if (!project) return next(new ErrorResponse(404, "no project found!"));
+  const isInProject =
+    project.manager.equals(authUser._id) ||
+    project.members.find(member => authUser._id.equals(member.user));
+  if (!isInProject)
+    return next(new ErrorResponse(401, "you can not access this project"));
+  res.status(200).json(new SuccessResponse(200, { project }));
+});

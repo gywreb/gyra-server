@@ -29,7 +29,7 @@ const ActivitySchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Project",
       required: [true, "project is required"],
-      autopopulate: true,
+      //autopopulate: true,
     },
   },
   { timestamps: true, id: false, toJSON: { virtuals: true } }

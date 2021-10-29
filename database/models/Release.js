@@ -26,7 +26,7 @@ const ReleaseSchema = new Schema(
       {
         type: Schema.Types.ObjectId,
         ref: "Task",
-        autopopulate: true,
+        //autopopulate: true,
       },
     ],
   },

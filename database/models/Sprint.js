@@ -25,7 +25,7 @@ const SprintSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Project",
       required: [true, "project id is required"],
-      autopopulate: true,
+      //autopopulate: true,
     },
   },
   { timestamps: true, id: false, toJSON: { virtuals: true } }

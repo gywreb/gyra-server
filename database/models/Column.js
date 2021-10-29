@@ -7,11 +7,6 @@ const ColumnSchema = new Schema(
       type: String,
       required: [true, "column name is required"],
       trim: true,
-      unique: true,
-    },
-    index: {
-      type: Number,
-      required: [true, "column index is required"],
     },
     archived: {
       type: Boolean,
@@ -20,7 +15,8 @@ const ColumnSchema = new Schema(
     project: {
       type: Schema.Types.ObjectId,
       ref: "Project",
-      autopopulate: true,
+      required: true,
+      //autopopulate: true,
     },
   },
   { timestamps: true, id: false, toJSON: { virtuals: true } }

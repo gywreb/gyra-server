@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
+const { MEMBER_ROLES } = require("../../configs/constants");
 const { model, Schema } = mongoose;
-
-const MEMBER_ROLES = ["leader", "developer", "tester", "product"];
 
 const ProjectSchema = new Schema(
   {
@@ -20,6 +19,10 @@ const ProjectSchema = new Schema(
       type: String,
       required: [true, "project key is required"],
       unique: true,
+    },
+    lastTaskKey: {
+      type: Number,
+      default: 0,
     },
     avatar: {
       type: String,
@@ -56,48 +59,39 @@ const ProjectSchema = new Schema(
         },
       },
     ],
-    columns: {
-      type: [
-        {
-          type: Schema.Types.ObjectId,
-          ref: "Column",
-          autopopulate: true,
-        },
-      ],
-    },
+    columns: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Column",
+        //autopopulate: true,
+      },
+    ],
     tasks: [
       {
         type: Schema.Types.ObjectId,
         ref: "Task",
-        autopopulate: true,
+        //autopopulate: true,
       },
     ],
     activities: [
       {
         type: Schema.Types.ObjectId,
         ref: "Activity",
-        autopopulate: true,
-      },
-    ],
-    types: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Type",
-        autopopulate: true,
+        //autopopulate: true,
       },
     ],
     releases: [
       {
         type: Schema.Types.ObjectId,
         ref: "Release",
-        autopopulate: true,
+        //autopopulate: true,
       },
     ],
     sprints: [
       {
         type: Schema.Types.ObjectId,
         ref: "Sprint",
-        autopopulate: true,
+        //autopopulate: true,
       },
     ],
   },

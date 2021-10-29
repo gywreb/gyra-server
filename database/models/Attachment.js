@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
+const { ATTACHMENT_TYPE } = require("../../configs/constants");
 const { model, Schema } = mongoose;
-
-const TYPE = ["IMAGE", "FILE"];
 
 const AttachmentSchema = new Schema(
   {
@@ -11,7 +10,7 @@ const AttachmentSchema = new Schema(
     },
     type: {
       type: String,
-      enum: TYPE,
+      enum: ATTACHMENT_TYPE,
       required: [true, "attachment type is required"],
     },
     size: {
@@ -22,7 +21,7 @@ const AttachmentSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Task",
       default: null,
-      autopopulate: true,
+      //autopopulate: true,
     },
   },
   { timestamps: true, id: false, toJSON: { virtuals: true } }

@@ -13,7 +13,7 @@ const CommentSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Task",
       required: [true, "task is required"],
-      autopopulate: true,
+      //autopopulate: true,
     },
     content: {
       type: String,

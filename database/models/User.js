@@ -37,7 +37,7 @@ const UserSchema = new Schema(
       {
         type: Schema.Types.ObjectId,
         ref: "Task",
-        autopopulate: true,
+        //autopopulate: true,
       },
     ],
     projects: [
@@ -51,7 +51,7 @@ const UserSchema = new Schema(
       {
         type: Schema.Types.ObjectId,
         ref: "User",
-        autopopulate: true,
+        //autopopulate: true,
       },
     ],
     pendingUser: [
@@ -65,7 +65,7 @@ const UserSchema = new Schema(
       {
         type: Schema.Types.ObjectId,
         ref: "Activity",
-        autopopulate: true,
+        //autopopulate: true,
       },
     ],
   },

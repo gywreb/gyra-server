@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
+const { PRIORITY, TASK_TYPES } = require("../../configs/constants");
 const { model, Schema } = mongoose;
-
-const PRIORITY = ["highest", "high", "medium", "low", "lowest"];
 
 const TaskSchema = new Schema(
   {
@@ -53,33 +52,32 @@ const TaskSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Sprint",
       default: null,
-      autopopulate: true,
+      //autopopulate: true,
     },
     type: {
-      type: Schema.Types.ObjectId,
-      ref: "Type",
+      type: String,
+      enum: TASK_TYPES,
       required: [true, "task type is required"],
-      autopopulate: true,
     },
     comments: [
       {
         type: Schema.Types.ObjectId,
         ref: "Comment",
-        autopopulate: true,
+        //autopopulate: true,
       },
     ],
     attachments: [
       {
         type: Schema.Types.ObjectId,
         ref: "Attachment",
-        autopopulate: true,
+        //autopopulate: true,
       },
     ],
     release: {
       type: Schema.Types.ObjectId,
       ref: "Release",
       default: null,
-      autopopulate: true,
+      //autopopulate: true,
     },
   },
   { timestamps: true, id: false, toJSON: { virtuals: true } }

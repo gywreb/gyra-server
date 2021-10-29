@@ -9,7 +9,6 @@ require("./database/models/Column");
 require("./database/models/User");
 require("./database/models/Task");
 require("./database/models/Activity");
-require("./database/models/Type");
 require("./database/models/Release");
 require("./database/models/Sprint");
 require("./database/models/Project");
@@ -17,6 +16,7 @@ require("./database/models/Attachment");
 require("./database/models/Comment");
 const auth = require("./routes/auth");
 const project = require("./routes/project");
+const column = require("./routes/column");
 const { errorHandler } = require("./middlewares/errorHandler");
 
 const app = express();
@@ -33,6 +33,7 @@ const endPointPrefix = "/gyra/v1";
 
 app.use(`${endPointPrefix}/auth`, auth);
 app.use(`${endPointPrefix}/project`, project);
+app.use(`${endPointPrefix}/column`, column);
 
 app.use(errorHandler);
 
