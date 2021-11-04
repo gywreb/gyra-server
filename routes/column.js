@@ -5,6 +5,6 @@ const columnController = require("../controllers/columnController");
 const router = Router();
 
 router.post("/create-column", jwtAuth, columnController.createColumn);
-router.get("/:projectId", jwtAuth, columnController.getColumnByProject);
+router.get("/:projectId", jwtAuth, columnController.getColumnListByProject);
 
 module.exports = router;

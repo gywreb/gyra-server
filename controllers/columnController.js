@@ -28,7 +28,7 @@ exports.createColumn = asyncMiddleware(async (req, res, next) => {
   res.status(201).json(new SuccessResponse(201, { newColumn }));
 });
 
-exports.getColumnByProject = asyncMiddleware(async (req, res, next) => {
+exports.getColumnListByProject = asyncMiddleware(async (req, res, next) => {
   const { projectId } = req.params;
 
   const existedProject = await Project.findById(projectId);
