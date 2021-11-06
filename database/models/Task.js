@@ -40,7 +40,7 @@ const TaskSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Project",
       required: [true, "project id required"],
-      autopopulate: true,
+      //autopopulate: true,
     },
     status: {
       type: Schema.Types.ObjectId,

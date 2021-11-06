@@ -23,9 +23,11 @@ exports.createColumn = asyncMiddleware(async (req, res, next) => {
   const newColumn = await column.save();
 
   existedProject.columns.push(newColumn._id);
-  await existedProject.save();
+  const newCurrentProject = await existedProject.save();
 
-  res.status(201).json(new SuccessResponse(201, { newColumn }));
+  res
+    .status(201)
+    .json(new SuccessResponse(201, { newColumn, newCurrentProject }));
 });
 
 exports.getColumnListByProject = asyncMiddleware(async (req, res, next) => {

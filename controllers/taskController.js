@@ -50,11 +50,15 @@ exports.createTask = asyncMiddleware(async (req, res, next) => {
     { $push: { tasks: newTask._id } }
   );
   await User.updateOne({ _id: assignee }, { $push: { tasks: newTask._id } });
-  await Column.updateOne({ _id: status }, { $push: { tasks: newTask._id } });
+
+  existedColumn.tasks.push(newTask._id);
+  const newColumn = await existedColumn.save();
+
   res.status(201).json(
     new SuccessResponse(201, {
       newTask,
       lastTaskKey: existedProject.lastTaskKey + 1,
+      newColumn,
     })
   );
 });
@@ -72,4 +76,39 @@ exports.getTaskListByProject = asyncMiddleware(async (req, res, next) => {
       lastTaskKey: existedProject.lastTaskKey,
     })
   );
+});
+
+exports.moveTaskInBoard = asyncMiddleware(async (req, res, next) => {
+  const { fromColumnId, toColumnId, toIndex } = req.body;
+  const { taskId } = req.params;
+
+  const fromColumn = await Column.findById(fromColumnId);
+  let toColumn = await Column.findById(toColumnId);
+  if (!taskId || !fromColumn || !toColumn) {
+    return next(new ErrorResponse(404, "Task or Column not found"));
+  }
+  if (fromColumnId === toColumnId) {
+    toColumn = fromColumn;
+  }
+
+  const fromIndex = fromColumn.tasks.indexOf(taskId);
+  if (fromIndex === -1) return next(new ErrorResponse(404, "Task not found"));
+
+  fromColumn.tasks.splice(fromIndex, 1);
+  const newFromColumn = await fromColumn.save();
+
+  let newToColumn = null;
+
+  if (!toColumn.tasks.includes(taskId)) {
+    if (toIndex === 0 || toIndex) {
+      toColumn.tasks.splice(toIndex, 0, taskId);
+    } else {
+      toColumn.tasks.push(taskId);
+    }
+    newToColumn = await toColumn.save();
+  }
+
+  res
+    .status(200)
+    .json(new SuccessResponse(200, { fromColumn, toColumn, taskId }));
 });

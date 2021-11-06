@@ -12,6 +12,13 @@ const ColumnSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    tasks: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Task",
+        required: true,
+      },
+    ],
     project: {
       type: Schema.Types.ObjectId,
       ref: "Project",
