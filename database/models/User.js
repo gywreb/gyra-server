@@ -33,6 +33,11 @@ const UserSchema = new Schema(
       type: String,
       default: null,
     },
+    projectKeys: [
+      {
+        type: String,
+      },
+    ],
     tasks: [
       {
         type: Schema.Types.ObjectId,
@@ -51,7 +56,7 @@ const UserSchema = new Schema(
       {
         type: Schema.Types.ObjectId,
         ref: "User",
-        //autopopulate: true,
+        // autopopulate: true,
       },
     ],
     pendingUser: [
@@ -90,7 +95,7 @@ UserSchema.statics.genJwt = function (payload) {
     expiresIn: process.env.JWT_EXPIRE,
   });
 };
-
 UserSchema.plugin(require("mongoose-autopopulate"));
+UserSchema.plugin(require("mongoose-paginate-v2"));
 
 module.exports = mongoose.model("User", UserSchema, "user");

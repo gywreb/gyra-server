@@ -8,6 +8,11 @@ exports.createProject = asyncMiddleware(async (req, res, next) => {
   const authUser = req.user._doc;
   if (!authUser) return next(new ErrorResponse(401, "unauthorized"));
   const { name, key, description, begin_date, end_date, members } = req.body;
+  if (authUser.projectKeys) {
+    if (authUser.projectKeys.includes(key)) {
+      return next(new ErrorResponse(400, `key "${key}" is already existed !`));
+    }
+  }
   if (members && members.length) {
     const isContain = members.every(user =>
       !authUser._id.equals(user) && authUser.team.includes(user) ? true : false
@@ -29,7 +34,7 @@ exports.createProject = asyncMiddleware(async (req, res, next) => {
   const newProject = await project.save();
   await User.updateOne(
     { _id: authUser._id },
-    { $push: { projects: newProject._id } }
+    { $push: { projects: newProject._id, projectKeys: key } }
   );
   res.status(201).json(new SuccessResponse(201, { newProject }));
 });

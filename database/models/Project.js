@@ -18,7 +18,7 @@ const ProjectSchema = new Schema(
     key: {
       type: String,
       required: [true, "project key is required"],
-      unique: true,
+      // unique: true,
     },
     lastTaskKey: {
       type: Number,

@@ -81,10 +81,10 @@ exports.getTaskListByProject = asyncMiddleware(async (req, res, next) => {
 exports.moveTaskInBoard = asyncMiddleware(async (req, res, next) => {
   const { fromColumnId, toColumnId, toIndex } = req.body;
   const { taskId } = req.params;
-
+  const task = await Task.findById(taskId);
   const fromColumn = await Column.findById(fromColumnId);
   let toColumn = await Column.findById(toColumnId);
-  if (!taskId || !fromColumn || !toColumn) {
+  if (!task || !fromColumn || !toColumn) {
     return next(new ErrorResponse(404, "Task or Column not found"));
   }
   if (fromColumnId === toColumnId) {
@@ -95,9 +95,7 @@ exports.moveTaskInBoard = asyncMiddleware(async (req, res, next) => {
   if (fromIndex === -1) return next(new ErrorResponse(404, "Task not found"));
 
   fromColumn.tasks.splice(fromIndex, 1);
-  const newFromColumn = await fromColumn.save();
-
-  let newToColumn = null;
+  await fromColumn.save();
 
   if (!toColumn.tasks.includes(taskId)) {
     if (toIndex === 0 || toIndex) {
@@ -105,10 +103,71 @@ exports.moveTaskInBoard = asyncMiddleware(async (req, res, next) => {
     } else {
       toColumn.tasks.push(taskId);
     }
-    newToColumn = await toColumn.save();
+    await toColumn.save();
   }
-
+  task.status = toColumn._id;
+  const updatedTask = await task.save();
   res
     .status(200)
-    .json(new SuccessResponse(200, { fromColumn, toColumn, taskId }));
+    .json(new SuccessResponse(200, { fromColumn, toColumn, updatedTask }));
+});
+
+exports.editTask = asyncMiddleware(async (req, res, next) => {
+  const updateParams = req.body;
+  const { taskId } = req.params;
+  const authUser = req.user._doc;
+  const task = await Task.findById(taskId);
+  if (!task) return next(new ErrorResponse(404, "no task found"));
+  if (
+    !(
+      (updateParams.managerId && authUser._id == updateParams.managerId) ||
+      authUser._id == task.reporter ||
+      authUser._id == task.assignee
+    )
+  ) {
+    return next(
+      new ErrorResponse(
+        403,
+        "you don't have the permission to perform this action"
+      )
+    );
+  }
+
+  const fromColumn = await Column.findById(task.status._id);
+  let toColumn = await Column.findById(updateParams.status);
+
+  if (updateParams.status && task.status._id == updateParams.status) {
+    toColumn = fromColumn;
+  }
+
+  // update logic
+  if (updateParams.status && !(task.status._id == updateParams.status)) {
+    const fromIndex = fromColumn.tasks.findIndex(task => task == taskId);
+    if (fromIndex === -1) return next(new ErrorResponse(404, "Task not found"));
+
+    fromColumn.tasks.splice(fromIndex, 1);
+    await fromColumn.save();
+
+    if (!toColumn.tasks.includes(taskId)) {
+      toColumn.tasks.push(taskId);
+    }
+    await toColumn.save();
+  }
+
+  if (updateParams.assignee && !(task.assignee == updateParams.assignee)) {
+    await User.updateOne({ _id: task.assignee }, { $pull: { tasks: taskId } });
+    await User.updateOne(
+      { _id: updateParams.assignee },
+      { $push: { tasks: taskId } }
+    );
+  }
+
+  for (let property in updateParams) {
+    if (property in task) task[property] = updateParams[property];
+  }
+
+  const updatedTask = await task.save();
+  res
+    .status(200)
+    .json(new SuccessResponse(200, { fromColumn, toColumn, updatedTask }));
 });

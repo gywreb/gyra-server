@@ -7,5 +7,6 @@ const router = Router();
 router.post("/create-task", jwtAuth, taskController.createTask);
 router.get("/:projectId", jwtAuth, taskController.getTaskListByProject);
 router.put("/move-task/:taskId", jwtAuth, taskController.moveTaskInBoard);
+router.put("/edit-task/:taskId", jwtAuth, taskController.editTask);
 
 module.exports = router;
