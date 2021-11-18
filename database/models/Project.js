@@ -46,17 +46,9 @@ const ProjectSchema = new Schema(
     },
     members: [
       {
-        _id: false,
-        user: {
-          type: Schema.Types.ObjectId,
-          ref: "User",
-          autopopulate: true,
-        },
-        role: {
-          type: String,
-          enum: MEMBER_ROLES,
-          default: "developer",
-        },
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        autopopulate: true,
       },
     ],
     columns: [

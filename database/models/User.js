@@ -63,14 +63,23 @@ const UserSchema = new Schema(
       {
         type: Schema.Types.ObjectId,
         ref: "User",
-        autopopulate: true,
+        // autopopulate: true,
       },
     ],
     notifications: [
       {
-        type: Schema.Types.ObjectId,
-        ref: "Activity",
-        //autopopulate: true,
+        content: {
+          type: String,
+          default: "",
+        },
+        seen: {
+          type: Boolean,
+          default: false,
+        },
+        timestamps: {
+          type: Date,
+          default: Date.now(),
+        },
       },
     ],
   },

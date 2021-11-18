@@ -14,8 +14,9 @@ exports.createProject = asyncMiddleware(async (req, res, next) => {
     }
   }
   if (members && members.length) {
+    console.log(`members`, members);
     const isContain = members.every(user =>
-      !authUser._id.equals(user) && authUser.team.includes(user) ? true : false
+      !(authUser._id == user) && authUser.team.includes(user) ? true : false
     );
     if (!isContain)
       return next(
