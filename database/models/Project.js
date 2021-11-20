@@ -32,10 +32,10 @@ const ProjectSchema = new Schema(
       type: String,
       default: null,
     },
-    duration: {
-      type: Number,
-      default: null,
-    },
+    // duration: {
+    //   type: Number,
+    //   default: null,
+    // },
     begin_date: {
       type: Date,
       required: [true, "project begin date is required"],

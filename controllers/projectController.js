@@ -1,3 +1,4 @@
+const { omit } = require("lodash");
 const Project = require("../database/models/Project");
 const User = require("../database/models/User");
 const { asyncMiddleware } = require("../middlewares/asyncMiddleware");
@@ -32,11 +33,28 @@ exports.createProject = asyncMiddleware(async (req, res, next) => {
     end_date: end_date || null,
     members: members ? [...members] : [],
   });
+
   const newProject = await project.save();
   await User.updateOne(
     { _id: authUser._id },
     { $push: { projects: newProject._id, projectKeys: key } }
   );
+
+  if (members.length) {
+    await User.updateMany(
+      { _id: members },
+      {
+        $push: {
+          projects: newProject._id,
+          notifications: {
+            content: `${authUser.username} just added you to project: ${newProject.name} - ${newProject.key}`,
+            seen: false,
+            timestamps: Date.now(),
+          },
+        },
+      }
+    );
+  }
   res.status(201).json(new SuccessResponse(201, { newProject }));
 });
 
@@ -47,7 +65,7 @@ exports.getProjects = asyncMiddleware(async (req, res, next) => {
     manager: authUser._id,
   });
   const joinedProjects = await Project.find({
-    "members.user": authUser._id,
+    members: authUser._id,
   });
   const projectList = [...ownProjects, ...joinedProjects].sort((a, b) =>
     a.createdAt - b.createdAt > 0 ? -1 : 1
@@ -60,10 +78,67 @@ exports.getProjectDetail = asyncMiddleware(async (req, res, next) => {
   const { id } = req.params;
   const project = await Project.findOne({ _id: id });
   if (!project) return next(new ErrorResponse(404, "no project found!"));
+  console.log(`project.manager`, project.manager);
   const isInProject =
-    project.manager.equals(authUser._id) ||
-    project.members.find(member => authUser._id.equals(member.user));
+    project.manager._id.equals(authUser._id) ||
+    project.members.find(member => authUser._id.equals(member._id));
   if (!isInProject)
     return next(new ErrorResponse(401, "you can not access this project"));
   res.status(200).json(new SuccessResponse(200, { project }));
+});
+
+exports.editProject = asyncMiddleware(async (req, res, next) => {
+  const authUser = req.user._doc;
+  const { id } = req.params;
+  const updateParams = req.body;
+
+  const project = await Project.findById(id);
+  if (!project) return next(new ErrorResponse(404, "no project found"));
+
+  if (!project.manager.equals(authUser._id))
+    return next(
+      new ErrorResponse(403, "you have no permission to perform this action")
+    );
+
+  const updateableParams = omit(updateParams, [
+    "manager",
+    "key",
+    "lastTaskKey",
+    "tasks",
+    "columns",
+    "activities",
+  ]);
+
+  let updateMembers = [];
+
+  if (updateableParams.members) {
+    updateableParams.members.map(memId => {
+      if (!project.members.find(mem => mem._id.equals(memId))) {
+        updateMembers.push(memId);
+      }
+    });
+    if (updateMembers.length) {
+      await User.updateMany(
+        { _id: updateMembers },
+        {
+          $push: {
+            projects: project._id,
+            notifications: {
+              content: `${authUser.username} just added you to project: ${project.name} - ${project.key}`,
+              seen: false,
+              timestamps: Date.now(),
+            },
+          },
+        }
+      );
+    }
+  }
+
+  for (let prop in updateableParams) {
+    if (prop in project) project[prop] = updateableParams[prop];
+  }
+
+  const updatedProject = await project.save();
+
+  res.status(200).json(new SuccessResponse(200, { updatedProject }));
 });

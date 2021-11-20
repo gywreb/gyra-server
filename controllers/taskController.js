@@ -121,8 +121,8 @@ exports.editTask = asyncMiddleware(async (req, res, next) => {
   if (
     !(
       (updateParams.managerId && authUser._id == updateParams.managerId) ||
-      authUser._id == task.reporter ||
-      authUser._id == task.assignee
+      authUser._id.equals(task.reporter._id) ||
+      authUser._id.equals(task.assignee._id)
     )
   ) {
     return next(
@@ -154,8 +154,11 @@ exports.editTask = asyncMiddleware(async (req, res, next) => {
     await toColumn.save();
   }
 
-  if (updateParams.assignee && !(task.assignee == updateParams.assignee)) {
-    await User.updateOne({ _id: task.assignee }, { $pull: { tasks: taskId } });
+  if (updateParams.assignee && !(task.assignee._id == updateParams.assignee)) {
+    await User.updateOne(
+      { _id: task.assignee._id },
+      { $pull: { tasks: taskId } }
+    );
     await User.updateOne(
       { _id: updateParams.assignee },
       { $push: { tasks: taskId } }
