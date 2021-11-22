@@ -36,5 +36,6 @@ const ActivitySchema = new Schema(
 );
 
 ActivitySchema.plugin(require("mongoose-autopopulate"));
+ActivitySchema.plugin(require("mongoose-paginate-v2"));
 
 module.exports = model("Activity", ActivitySchema, "activity");

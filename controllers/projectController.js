@@ -1,4 +1,5 @@
 const { omit } = require("lodash");
+const Activity = require("../database/models/Activity");
 const Project = require("../database/models/Project");
 const User = require("../database/models/User");
 const { asyncMiddleware } = require("../middlewares/asyncMiddleware");
@@ -15,7 +16,6 @@ exports.createProject = asyncMiddleware(async (req, res, next) => {
     }
   }
   if (members && members.length) {
-    console.log(`members`, members);
     const isContain = members.every(user =>
       !(authUser._id == user) && authUser.team.includes(user) ? true : false
     );
@@ -35,6 +35,16 @@ exports.createProject = asyncMiddleware(async (req, res, next) => {
   });
 
   const newProject = await project.save();
+
+  const activity = new Activity({
+    content: `created this project`,
+    creator: authUser._id,
+    target_user: null,
+    project: newProject._id,
+  });
+
+  await activity.save();
+
   await User.updateOne(
     { _id: authUser._id },
     { $push: { projects: newProject._id, projectKeys: key } }
@@ -47,7 +57,7 @@ exports.createProject = asyncMiddleware(async (req, res, next) => {
         $push: {
           projects: newProject._id,
           notifications: {
-            content: `${authUser.username} just added you to project: ${newProject.name} - ${newProject.key}`,
+            content: `${authUser.username} just added you to project: '${newProject.key} - ${newProject.name}'`,
             seen: false,
             timestamps: Date.now(),
           },
@@ -78,7 +88,6 @@ exports.getProjectDetail = asyncMiddleware(async (req, res, next) => {
   const { id } = req.params;
   const project = await Project.findOne({ _id: id });
   if (!project) return next(new ErrorResponse(404, "no project found!"));
-  console.log(`project.manager`, project.manager);
   const isInProject =
     project.manager._id.equals(authUser._id) ||
     project.members.find(member => authUser._id.equals(member._id));
@@ -110,6 +119,7 @@ exports.editProject = asyncMiddleware(async (req, res, next) => {
   ]);
 
   let updateMembers = [];
+  let membersActivityMess = "";
 
   if (updateableParams.members) {
     updateableParams.members.map(memId => {
@@ -124,13 +134,17 @@ exports.editProject = asyncMiddleware(async (req, res, next) => {
           $push: {
             projects: project._id,
             notifications: {
-              content: `${authUser.username} just added you to project: ${project.name} - ${project.key}`,
+              content: `${authUser.username} just added you to project: '${project.key} - ${project.name}'`,
               seen: false,
               timestamps: Date.now(),
             },
           },
         }
       );
+      const newMembers = await User.find({ _id: updateMembers });
+      newMembers.map(user => {
+        membersActivityMess += `, ${user.username}`;
+      });
     }
   }
 
@@ -139,6 +153,19 @@ exports.editProject = asyncMiddleware(async (req, res, next) => {
   }
 
   const updatedProject = await project.save();
+
+  const activity = new Activity({
+    content: membersActivityMess.length
+      ? `updated this project and ${membersActivityMess.slice(
+          1
+        )} was added to the project`
+      : `updated this project.`,
+    creator: authUser._id,
+    target_user: null,
+    project: updatedProject._id,
+  });
+
+  await activity.save();
 
   res.status(200).json(new SuccessResponse(200, { updatedProject }));
 });

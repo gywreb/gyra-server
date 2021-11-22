@@ -65,13 +65,13 @@ const ProjectSchema = new Schema(
         //autopopulate: true,
       },
     ],
-    activities: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Activity",
-        //autopopulate: true,
-      },
-    ],
+    // activities: [
+    //   {
+    //     type: Schema.Types.ObjectId,
+    //     ref: "Activity",
+    //     //autopopulate: true,
+    //   },
+    // ],
     releases: [
       {
         type: Schema.Types.ObjectId,

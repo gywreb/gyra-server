@@ -19,6 +19,7 @@ const project = require("./routes/project");
 const column = require("./routes/column");
 const task = require("./routes/task");
 const user = require("./routes/user");
+const activity = require("./routes/activity");
 const { errorHandler } = require("./middlewares/errorHandler");
 
 const app = express();
@@ -38,6 +39,7 @@ app.use(`${endPointPrefix}/project`, project);
 app.use(`${endPointPrefix}/column`, column);
 app.use(`${endPointPrefix}/task`, task);
 app.use(`${endPointPrefix}/user`, user);
+app.use(`${endPointPrefix}/activity`, activity);
 
 app.use(errorHandler);
 

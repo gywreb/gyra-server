@@ -3,20 +3,18 @@ const { asyncMiddleware } = require("../middlewares/asyncMiddleware");
 const { ErrorResponse } = require("../models/ErrorResponse");
 const { SuccessResponse } = require("../models/SuccessResponse");
 const { EmailService } = require("../services/EmailService");
+const shuffleArray = require("../utils/shuffleArray");
 
 exports.getAllUsers = asyncMiddleware(async (req, res, next) => {
   const authUser = req.user._doc;
   const { perPage, page } = req.query;
   const userList = await User.paginate(
-    {},
-    { offset: perPage * (page - 1), limit: perPage }
+    { _id: { $ne: authUser._id, $nin: authUser.team } },
+    { limit: perPage, page }
   );
   const userNotInTeam = {
     ...userList,
-    docs: userList.docs.filter(
-      user =>
-        !user._id.equals(authUser._id) && !authUser.team.includes(user._id)
-    ),
+    docs: shuffleArray(userList.docs),
   };
   res.json(new SuccessResponse(200, { userList: userNotInTeam }));
 });

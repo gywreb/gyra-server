@@ -1,3 +1,4 @@
+const Activity = require("../database/models/Activity");
 const Column = require("../database/models/Column");
 const Project = require("../database/models/Project");
 const Task = require("../database/models/Task");
@@ -5,6 +6,7 @@ const User = require("../database/models/User");
 const { asyncMiddleware } = require("../middlewares/asyncMiddleware");
 const { ErrorResponse } = require("../models/ErrorResponse");
 const { SuccessResponse } = require("../models/SuccessResponse");
+const { EmailService } = require("../services/EmailService");
 
 exports.createTask = asyncMiddleware(async (req, res, next) => {
   const authUser = req.user._doc;
@@ -38,6 +40,7 @@ exports.createTask = asyncMiddleware(async (req, res, next) => {
   });
 
   const newTask = await task.save();
+
   await Project.updateOne(
     { _id: project },
     {
@@ -49,10 +52,40 @@ exports.createTask = asyncMiddleware(async (req, res, next) => {
     { _id: authUser._id },
     { $push: { tasks: newTask._id } }
   );
-  await User.updateOne({ _id: assignee }, { $push: { tasks: newTask._id } });
+  await User.updateOne(
+    { _id: assignee },
+    {
+      $push: {
+        tasks: newTask._id,
+        notifications: {
+          content: `${authUser.username} assigned ${newTask.task_key} - ${newTask.name} to you.`,
+        },
+      },
+    }
+  );
 
   existedColumn.tasks.push(newTask._id);
   const newColumn = await existedColumn.save();
+
+  // EmailService.init();
+  // await EmailService.sendInvitation(
+  //   authUser.username,
+  //   newTask.assignee.username,
+  //   newTask.assignee.email,
+  //   `${authUser.username} created ${newTask.task_key} - ${newTask.name}`,
+  //   `${authUser.username} assigned ${newTask.task_key} - ${newTask.name} to you. Let check it out`,
+  //   `${process.env.CLIENT_URL}/board/${project}`,
+  //   next
+  // );
+
+  const activity = new Activity({
+    content: `created ${newTask.task_key} - ${newTask.name}. This task was assigned to ${newTask.assignee.username}`,
+    creator: authUser._id,
+    target_user: task.assignee._id,
+    project: project,
+  });
+
+  await activity.save();
 
   res.status(201).json(
     new SuccessResponse(201, {
@@ -79,6 +112,7 @@ exports.getTaskListByProject = asyncMiddleware(async (req, res, next) => {
 });
 
 exports.moveTaskInBoard = asyncMiddleware(async (req, res, next) => {
+  const authUser = req.user._doc;
   const { fromColumnId, toColumnId, toIndex } = req.body;
   const { taskId } = req.params;
   const task = await Task.findById(taskId);
@@ -107,6 +141,26 @@ exports.moveTaskInBoard = asyncMiddleware(async (req, res, next) => {
   }
   task.status = toColumn._id;
   const updatedTask = await task.save();
+
+  let activity = null;
+  if (fromColumn._id === toColumn._id) {
+    activity = new Activity({
+      content: `updated status of '${updatedTask.task_key} - ${updatedTask.name}'`,
+      creator: authUser._id,
+      target_user: updatedTask.assignee._id,
+      project: updatedTask.project,
+    });
+  } else {
+    activity = new Activity({
+      content: `transitioned '${updatedTask.task_key} - ${updatedTask.name}' from '${fromColumn.name}' to '${toColumn.name}'`,
+      creator: authUser._id,
+      target_user: updatedTask.assignee._id,
+      project: updatedTask.project,
+    });
+  }
+
+  if (activity) await activity.save();
+
   res
     .status(200)
     .json(new SuccessResponse(200, { fromColumn, toColumn, updatedTask }));
@@ -154,6 +208,12 @@ exports.editTask = asyncMiddleware(async (req, res, next) => {
     await toColumn.save();
   }
 
+  for (let property in updateParams) {
+    if (property in task) task[property] = updateParams[property];
+  }
+
+  const updatedTask = await task.save();
+
   if (updateParams.assignee && !(task.assignee._id == updateParams.assignee)) {
     await User.updateOne(
       { _id: task.assignee._id },
@@ -161,15 +221,45 @@ exports.editTask = asyncMiddleware(async (req, res, next) => {
     );
     await User.updateOne(
       { _id: updateParams.assignee },
-      { $push: { tasks: taskId } }
+      {
+        $push: {
+          tasks: taskId,
+          notifications: {
+            content: `${authUser.username} assigned '${newTask.task_key} - ${newTask.name}' to you.`,
+          },
+        },
+      }
     );
   }
 
-  for (let property in updateParams) {
-    if (property in task) task[property] = updateParams[property];
+  let activity = null;
+  if (toColumn) {
+    if (fromColumn._id === toColumn._id) {
+      activity = new Activity({
+        content: `updated '${updatedTask.task_key} - ${updatedTask.name}'`,
+        creator: authUser._id,
+        target_user: updatedTask.assignee._id,
+        project: updatedTask.project,
+      });
+    } else {
+      activity = new Activity({
+        content: `updated '${updatedTask.task_key} - ${updatedTask.name}'. '${updatedTask.task_key} - ${updatedTask.name}' transitioned from '${fromColumn.name}' to '${toColumn.name}'`,
+        creator: authUser._id,
+        target_user: updatedTask.assignee._id,
+        project: updatedTask.project,
+      });
+    }
+  } else {
+    activity = new Activity({
+      content: `updated '${updatedTask.task_key} - ${updatedTask.name}'`,
+      creator: authUser._id,
+      target_user: updatedTask.assignee._id,
+      project: updatedTask.project,
+    });
   }
 
-  const updatedTask = await task.save();
+  if (activity) await activity.save();
+
   res
     .status(200)
     .json(new SuccessResponse(200, { fromColumn, toColumn, updatedTask }));
