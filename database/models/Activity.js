@@ -7,6 +7,10 @@ const ActivitySchema = new Schema(
       type: String,
       required: [true, "activity content is required"],
     },
+    subContent: {
+      type: String,
+      default: null,
+    },
     creator: {
       type: Schema.Types.ObjectId,
       ref: "User",

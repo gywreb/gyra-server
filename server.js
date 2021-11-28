@@ -14,12 +14,15 @@ require("./database/models/Sprint");
 require("./database/models/Project");
 require("./database/models/Attachment");
 require("./database/models/Comment");
+require("./database/models/Notification");
 const auth = require("./routes/auth");
 const project = require("./routes/project");
 const column = require("./routes/column");
 const task = require("./routes/task");
 const user = require("./routes/user");
 const activity = require("./routes/activity");
+const comment = require("./routes/comment");
+const notification = require("./routes/notification");
 const { errorHandler } = require("./middlewares/errorHandler");
 
 const app = express();
@@ -40,6 +43,8 @@ app.use(`${endPointPrefix}/column`, column);
 app.use(`${endPointPrefix}/task`, task);
 app.use(`${endPointPrefix}/user`, user);
 app.use(`${endPointPrefix}/activity`, activity);
+app.use(`${endPointPrefix}/comment`, comment);
+app.use(`${endPointPrefix}/notification`, notification);
 
 app.use(errorHandler);
 

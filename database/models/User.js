@@ -68,18 +68,8 @@ const UserSchema = new Schema(
     ],
     notifications: [
       {
-        content: {
-          type: String,
-          default: "",
-        },
-        seen: {
-          type: Boolean,
-          default: false,
-        },
-        timestamps: {
-          type: Date,
-          default: Date.now(),
-        },
+        type: Schema.Types.ObjectId,
+        ref: "Notification",
       },
     ],
   },

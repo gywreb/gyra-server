@@ -1,3 +1,4 @@
+const Notification = require("../database/models/Notification");
 const User = require("../database/models/User");
 const { asyncMiddleware } = require("../middlewares/asyncMiddleware");
 const { ErrorResponse } = require("../models/ErrorResponse");
@@ -67,17 +68,21 @@ exports.confirmInvitation = asyncMiddleware(async (req, res, next) => {
   if (senderUser.team.includes(receiver))
     return next(new ErrorResponse(400, "you have already joined this team"));
 
+  const notification = new Notification({
+    sender: receiverUser._id,
+    content: `has joined your team`,
+    seen: false,
+    owner: senderUser._id,
+  });
+
+  await notification.save();
+
   await User.updateOne(
     { _id: senderUser._id },
     {
       $pull: { pendingUser: receiverUser._id },
       $push: {
         team: receiverUser._id,
-        notifications: {
-          content: `${receiverUser.username} has joined your team`,
-          seen: false,
-          timestamps: Date.now(),
-        },
       },
     }
   );

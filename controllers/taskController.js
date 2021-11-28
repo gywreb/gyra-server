@@ -1,5 +1,6 @@
 const Activity = require("../database/models/Activity");
 const Column = require("../database/models/Column");
+const Notification = require("../database/models/Notification");
 const Project = require("../database/models/Project");
 const Task = require("../database/models/Task");
 const User = require("../database/models/User");
@@ -52,14 +53,23 @@ exports.createTask = asyncMiddleware(async (req, res, next) => {
     { _id: authUser._id },
     { $push: { tasks: newTask._id } }
   );
+
+  if (!authUser._id.equals(assignee)) {
+    const notification = new Notification({
+      sender: authUser._id,
+      content: `assigned '${newTask.task_key} - ${newTask.name}' to you.`,
+      seen: false,
+      owner: assignee,
+    });
+
+    await notification.save();
+  }
+
   await User.updateOne(
     { _id: assignee },
     {
       $push: {
         tasks: newTask._id,
-        notifications: {
-          content: `${authUser.username} assigned ${newTask.task_key} - ${newTask.name} to you.`,
-        },
       },
     }
   );
@@ -79,7 +89,7 @@ exports.createTask = asyncMiddleware(async (req, res, next) => {
   // );
 
   const activity = new Activity({
-    content: `created ${newTask.task_key} - ${newTask.name}. This task was assigned to ${newTask.assignee.username}`,
+    content: `created '${newTask.task_key} - ${newTask.name}'. This task was assigned to ${newTask.assignee.username}`,
     creator: authUser._id,
     target_user: task.assignee._id,
     project: project,
@@ -219,14 +229,21 @@ exports.editTask = asyncMiddleware(async (req, res, next) => {
       { _id: task.assignee._id },
       { $pull: { tasks: taskId } }
     );
+
+    const notification = new Notification({
+      sender: authUser._id,
+      content: `assigned '${task.task_key} - ${task.name}' to you.`,
+      seen: false,
+      owner: updateParams.assignee,
+    });
+
+    await notification.save();
+
     await User.updateOne(
       { _id: updateParams.assignee },
       {
         $push: {
           tasks: taskId,
-          notifications: {
-            content: `${authUser.username} assigned '${newTask.task_key} - ${newTask.name}' to you.`,
-          },
         },
       }
     );

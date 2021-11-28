@@ -1,5 +1,6 @@
 const { omit } = require("lodash");
 const Activity = require("../database/models/Activity");
+const Notification = require("../database/models/Notification");
 const Project = require("../database/models/Project");
 const User = require("../database/models/User");
 const { asyncMiddleware } = require("../middlewares/asyncMiddleware");
@@ -51,16 +52,20 @@ exports.createProject = asyncMiddleware(async (req, res, next) => {
   );
 
   if (members.length) {
+    const multiNotiInsert = members.map(userId => ({
+      sender: authUser._id,
+      content: `just added you to project: '${newProject.key} - ${newProject.name}'`,
+      seen: false,
+      owner: userId,
+    }));
+
+    await Notification.insertMany(multiNotiInsert);
+
     await User.updateMany(
       { _id: members },
       {
         $push: {
           projects: newProject._id,
-          notifications: {
-            content: `${authUser.username} just added you to project: '${newProject.key} - ${newProject.name}'`,
-            seen: false,
-            timestamps: Date.now(),
-          },
         },
       }
     );
@@ -128,16 +133,20 @@ exports.editProject = asyncMiddleware(async (req, res, next) => {
       }
     });
     if (updateMembers.length) {
+      const multiNotiInsert = updateMembers.map(userId => ({
+        sender: authUser._id,
+        content: `just added you to project: '${project.key} - ${project.name}'`,
+        seen: false,
+        owner: userId,
+      }));
+
+      await Notification.insertMany(multiNotiInsert);
+
       await User.updateMany(
         { _id: updateMembers },
         {
           $push: {
             projects: project._id,
-            notifications: {
-              content: `${authUser.username} just added you to project: '${project.key} - ${project.name}'`,
-              seen: false,
-              timestamps: Date.now(),
-            },
           },
         }
       );
