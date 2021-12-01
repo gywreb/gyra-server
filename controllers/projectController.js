@@ -32,7 +32,7 @@ exports.createProject = asyncMiddleware(async (req, res, next) => {
     description: description || null,
     begin_date,
     end_date: end_date || null,
-    members: members ? [...members] : [],
+    members: members && members.length ? [...members] : [],
   });
 
   const newProject = await project.save();
@@ -51,7 +51,7 @@ exports.createProject = asyncMiddleware(async (req, res, next) => {
     { $push: { projects: newProject._id, projectKeys: key } }
   );
 
-  if (members.length) {
+  if (members && members.length) {
     const multiNotiInsert = members.map(userId => ({
       sender: authUser._id,
       content: `just added you to project: '${newProject.key} - ${newProject.name}'`,
