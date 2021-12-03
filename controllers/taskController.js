@@ -1,3 +1,4 @@
+const { omit } = require("lodash");
 const Activity = require("../database/models/Activity");
 const Column = require("../database/models/Column");
 const Notification = require("../database/models/Notification");
@@ -163,6 +164,7 @@ exports.moveTaskInBoard = asyncMiddleware(async (req, res, next) => {
   } else {
     activity = new Activity({
       content: `transitioned '${updatedTask.task_key} - ${updatedTask.name}' from '${fromColumn.name}' to '${toColumn.name}'`,
+      subContent: `<p>+ status: <em>${fromColumn.name} =&gt; </em><strong><em>${toColumn.name}</em></strong></p>`,
       creator: authUser._id,
       target_user: updatedTask.assignee._id,
       project: updatedTask.project,
@@ -218,8 +220,12 @@ exports.editTask = asyncMiddleware(async (req, res, next) => {
     await toColumn.save();
   }
 
+  let oldTask = {};
   for (let property in updateParams) {
-    if (property in task) task[property] = updateParams[property];
+    if (property in task) {
+      oldTask[property] = task[property];
+      task[property] = updateParams[property];
+    }
   }
 
   const updatedTask = await task.save();
@@ -248,34 +254,65 @@ exports.editTask = asyncMiddleware(async (req, res, next) => {
       }
     );
   }
-
-  let activity = null;
-  if (toColumn) {
-    if (fromColumn._id === toColumn._id) {
-      activity = new Activity({
-        content: `updated '${updatedTask.task_key} - ${updatedTask.name}'`,
-        creator: authUser._id,
-        target_user: updatedTask.assignee._id,
-        project: updatedTask.project,
-      });
-    } else {
-      activity = new Activity({
-        content: `updated '${updatedTask.task_key} - ${updatedTask.name}'. '${updatedTask.task_key} - ${updatedTask.name}' transitioned from '${fromColumn.name}' to '${toColumn.name}'`,
-        creator: authUser._id,
-        target_user: updatedTask.assignee._id,
-        project: updatedTask.project,
-      });
+  let subContent = "";
+  oldTask = omit(oldTask, [
+    "_id",
+    "reporter",
+    "project",
+    "task_key",
+    "createdAt",
+    "updatedAt",
+  ]);
+  for (let property in updateParams) {
+    if (property in oldTask) {
+      switch (property) {
+        case "assignee": {
+          if (!oldTask[property]._id.equals(updatedTask[property]._id))
+            subContent += `<p>+ ${property}: <em>${oldTask[property].username} =&gt; </em><strong><em>${updatedTask[property].username}</em></strong></p>`;
+          break;
+        }
+        case "status": {
+          if (!oldTask[property]._id.equals(updatedTask[property]._id)) {
+            if (
+              updateParams.status &&
+              !(oldTask[property]._id == updateParams.status)
+            )
+              subContent += `<p>+ ${property}: <em>${oldTask[property].name} =&gt; </em><strong><em>${updatedTask[property].name}</em></strong></p>`;
+          }
+          break;
+        }
+        case "description": {
+          break;
+        }
+        default:
+          if (!(oldTask[property] == updatedTask[property]))
+            subContent += `<p>+ ${property}: <em>${oldTask[property]} =&gt; </em><strong><em>${updatedTask[property]}</em></strong></p>`;
+          break;
+      }
     }
-  } else {
-    activity = new Activity({
-      content: `updated '${updatedTask.task_key} - ${updatedTask.name}'`,
+  }
+
+  const activity = new Activity({
+    content: `updated '${updatedTask.task_key} - ${updatedTask.name}'.`,
+    subContent: subContent.length ? subContent : null,
+    creator: authUser._id,
+    target_user: updatedTask.assignee._id,
+    project: updatedTask.project,
+  });
+
+  await activity.save();
+
+  if (oldTask.description && oldTask.description != updatedTask.description) {
+    const descActivity = new Activity({
+      content: `updated '${updatedTask.task_key} - ${updatedTask.name}' description`,
+      subContent: updatedTask.description,
       creator: authUser._id,
       target_user: updatedTask.assignee._id,
       project: updatedTask.project,
     });
-  }
 
-  if (activity) await activity.save();
+    await descActivity.save();
+  }
 
   res
     .status(200)

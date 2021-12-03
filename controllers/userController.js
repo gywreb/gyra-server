@@ -42,6 +42,15 @@ exports.inviteUserJoinTeam = asyncMiddleware(async (req, res, next) => {
   sendInviteUser.pendingUser.push(invitedUser._id);
   const userInfo = await sendInviteUser.save();
 
+  const notification = new Notification({
+    sender: sendInviteUser._id,
+    content: `has invited you to join their team. Check out your mail inbox to confirm the invitation`,
+    seen: false,
+    owner: invitedUser._id,
+  });
+
+  await notification.save();
+
   EmailService.init();
   await EmailService.sendInvitation(
     authUser.username,

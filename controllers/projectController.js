@@ -1,4 +1,5 @@
 const { omit } = require("lodash");
+const moment = require("moment");
 const Activity = require("../database/models/Activity");
 const Notification = require("../database/models/Notification");
 const Project = require("../database/models/Project");
@@ -151,30 +152,97 @@ exports.editProject = asyncMiddleware(async (req, res, next) => {
         }
       );
       const newMembers = await User.find({ _id: updateMembers });
+      membersActivityMess += `<p><strong><u>New members:</u></strong></p>`;
       newMembers.map(user => {
-        membersActivityMess += `, ${user.username}`;
+        membersActivityMess += `<p><em>+ ${user.username}</em></p>`;
       });
     }
   }
 
+  let oldProject = {};
+  let subContent = "";
   for (let prop in updateableParams) {
-    if (prop in project) project[prop] = updateableParams[prop];
+    if (prop in project) {
+      oldProject[prop] = project[prop];
+      project[prop] = updateableParams[prop];
+    }
   }
 
   const updatedProject = await project.save();
 
+  oldProject = omit(oldProject, [
+    "_id",
+    "key",
+    "lastTaskKey",
+    "manager",
+    "members",
+    "columns",
+    "begin_date",
+    "tasks",
+  ]);
+  for (let property in updateParams) {
+    if (property in oldProject) {
+      switch (property) {
+        case "end_date": {
+          if (
+            moment(oldProject[property]).format("DD/MM/yyyy") !=
+            moment(updatedProject[property]).format("DD/MM/yyyy")
+          ) {
+            subContent += `<p>+ ${property}: <em>${moment(
+              oldProject[property]
+            ).format("DD/MM/yyyy")} =&gt; </em><strong><em>${moment(
+              updatedProject[property]
+            ).format("DD/MM/yyyy")}</em></strong></p>`;
+          }
+          break;
+        }
+        case "description": {
+          break;
+        }
+        default:
+          if (!(oldProject[property] == updatedProject[property]))
+            subContent += `<p>+ ${property}: <em>${oldProject[property]} =&gt; </em><strong><em>${updatedProject[property]}</em></strong></p>`;
+          break;
+      }
+    }
+  }
+
   const activity = new Activity({
-    content: membersActivityMess.length
-      ? `updated this project and ${membersActivityMess.slice(
-          1
-        )} was added to the project`
-      : `updated this project.`,
+    content: `updated this project.`,
+    subContent: subContent.length ? subContent : null,
     creator: authUser._id,
     target_user: null,
     project: updatedProject._id,
   });
 
   await activity.save();
+
+  if (updateMembers.length) {
+    const addMemActivity = new Activity({
+      content: `updated this project members.`,
+      subContent: membersActivityMess.length ? membersActivityMess : null,
+      creator: authUser._id,
+      target_user: null,
+      project: updatedProject._id,
+    });
+
+    await addMemActivity.save();
+  }
+
+  if (
+    oldProject.description &&
+    oldProject.description != updatedProject.description
+  ) {
+    const addMemActivity = new Activity({
+      content: `updated this project description.`,
+      subContent: updatedProject.description,
+      creator: authUser._id,
+      target_user: null,
+      project: updatedProject._id,
+    });
+
+    await addMemActivity.save();
+  }
 
   res.status(200).json(new SuccessResponse(200, { updatedProject }));
 });
