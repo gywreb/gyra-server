@@ -86,6 +86,16 @@ const ProjectSchema = new Schema(
         //autopopulate: true,
       },
     ],
+    currentSprint: {
+      type: Schema.Types.ObjectId,
+      ref: "Sprint",
+      default: null,
+      autopopulate: true,
+    },
+    lastSprintKey: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true, id: false, toJSON: { virtuals: true } }
 );

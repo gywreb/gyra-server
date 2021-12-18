@@ -15,6 +15,7 @@ require("./database/models/Project");
 require("./database/models/Attachment");
 require("./database/models/Comment");
 require("./database/models/Notification");
+require("./database/models/SubTask");
 const auth = require("./routes/auth");
 const project = require("./routes/project");
 const column = require("./routes/column");

@@ -7,7 +7,6 @@ const SprintSchema = new Schema(
       type: String,
       required: [true, "sprint name is required"],
       trim: true,
-      unique: true,
     },
     begin_date: {
       type: Date,

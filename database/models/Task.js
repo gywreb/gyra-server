@@ -7,7 +7,7 @@ const TaskSchema = new Schema(
     task_key: {
       type: String,
       required: [true, "task key is required"],
-      unique: true,
+      // unique: true,
       trim: true,
     },
     name: {
@@ -78,6 +78,38 @@ const TaskSchema = new Schema(
       ref: "Release",
       default: null,
       //autopopulate: true,
+    },
+    subtasks: [
+      {
+        id: {
+          type: Number,
+          required: ["subtask id is required"],
+        },
+        content: {
+          type: String,
+          required: ["subtask content is required"],
+        },
+        isDone: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
+    isDone: {
+      type: Boolean,
+      default: false,
+    },
+    isResolve: {
+      type: Boolean,
+      default: false,
+    },
+    isClose: {
+      type: Boolean,
+      default: false,
+    },
+    isWorking: {
+      type: Boolean,
+      default: true,
     },
   },
   { timestamps: true, id: false, toJSON: { virtuals: true } }

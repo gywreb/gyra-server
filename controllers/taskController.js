@@ -22,12 +22,16 @@ exports.createTask = asyncMiddleware(async (req, res, next) => {
     project,
     status,
     type,
+    subtasks,
   } = req.body;
   const existedProject = await Project.findById(project);
   if (!existedProject) return next(new ErrorResponse(404, "no project found"));
 
   const existedColumn = await Column.findById(status);
   if (!existedColumn) return next(new ErrorResponse(404, "no column found"));
+
+  if (subtasks.length === 0)
+    return next(new ErrorResponse(400, "subtasks is required"));
 
   const task = new Task({
     task_key,
@@ -39,6 +43,7 @@ exports.createTask = asyncMiddleware(async (req, res, next) => {
     status,
     type,
     reporter: authUser._id,
+    subtasks,
   });
 
   const newTask = await task.save();
@@ -317,4 +322,94 @@ exports.editTask = asyncMiddleware(async (req, res, next) => {
   res
     .status(200)
     .json(new SuccessResponse(200, { fromColumn, toColumn, updatedTask }));
+});
+
+exports.toggleSubTaskStatus = asyncMiddleware(async (req, res, next) => {
+  const authUser = req.user._doc;
+  const { subTaskId, taskId } = req.body;
+
+  const task = await Task.findById(taskId);
+  const subtask = task.subtasks.find(st => st.id === subTaskId);
+
+  if (!authUser._id.equals(task.assignee._id))
+    return next(new ErrorResponse(403, "you don't have the permission"));
+
+  const subtaskIndex = task.subtasks.findIndex(st => st.id === subTaskId);
+  if (!subtask || subtaskIndex === -1)
+    return next(new ErrorResponse(404, "subtask not found"));
+
+  task.subtasks = [
+    ...task._doc.subtasks.slice(0, subtaskIndex),
+    { ...subtask._doc, isDone: !subtask.isDone },
+    ...task._doc.subtasks.slice(subtaskIndex + 1),
+  ];
+
+  const updatedTask = await task.save();
+  res.json(new SuccessResponse(200, { updatedTask }));
+});
+
+exports.doneTask = asyncMiddleware(async (req, res, next) => {
+  const authUser = req.user._doc;
+  const { taskId } = req.params;
+
+  const task = await Task.findById(taskId);
+  const column = await Column.findById(task.status._id);
+
+  if (!authUser._id.equals(task.assignee._id))
+    return next(new ErrorResponse(403, "you don't have the permission"));
+
+  if (task.subtasks.some(st => !st.isDone))
+    return next(
+      new ErrorResponse(404, "please complete all the subtask first")
+    );
+
+  task.isDone = true;
+  task.isClose = false;
+  task.isResolve = false;
+  task.isWorking = false;
+  const updatedTask = await task.save();
+
+  column.tasks = column.tasks.filter(t => t != taskId);
+  const updatedColumn = await column.save();
+
+  res.json(new SuccessResponse(200, { updatedTask, updatedColumn }));
+});
+
+exports.resolvedTask = asyncMiddleware(async (req, res, next) => {
+  const authUser = req.user._doc;
+  const { taskId } = req.params;
+
+  const task = await Task.findById(taskId);
+
+  if (!authUser._id.equals(task.reporter._id))
+    return next(new ErrorResponse(403, "you don't have the permission"));
+  if (!task.isDone)
+    return next(new ErrorResponse(400, "this task is not done yet"));
+  task.isDone = false;
+  task.isClose = false;
+  task.isResolve = true;
+  task.isWorking = false;
+  const updatedTask = await task.save();
+
+  res.json(new SuccessResponse(200, { updatedTask }));
+});
+
+exports.closeTask = asyncMiddleware(async (req, res, next) => {
+  const authUser = req.user._doc;
+  const { taskId } = req.params;
+
+  const task = await Task.findById(taskId);
+
+  if (!authUser._id.equals(task.reporter._id))
+    return next(new ErrorResponse(403, "you don't have the permission"));
+  if (!task.isDone)
+    return next(new ErrorResponse(400, "this task is not done yet"));
+
+  task.isDone = false;
+  task.isClose = true;
+  task.isResolve = false;
+  task.isWorking = false;
+  const updatedTask = await task.save();
+
+  res.json(new SuccessResponse(200, { updatedTask }));
 });
