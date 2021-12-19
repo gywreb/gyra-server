@@ -12,5 +12,6 @@ router.put("/toggle-subtask", jwtAuth, taskController.toggleSubTaskStatus);
 router.put("/done-task/:taskId", jwtAuth, taskController.doneTask);
 router.put("/resolve-task/:taskId", jwtAuth, taskController.resolvedTask);
 router.put("/close-task/:taskId", jwtAuth, taskController.closeTask);
+router.put("/reopen-task/:taskId", jwtAuth, taskController.reopenTask);
 
 module.exports = router;

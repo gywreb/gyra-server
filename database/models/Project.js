@@ -24,6 +24,10 @@ const ProjectSchema = new Schema(
       type: Number,
       default: 0,
     },
+    lastUserStoryKey: {
+      type: Number,
+      default: 0,
+    },
     avatar: {
       type: String,
       default: null,

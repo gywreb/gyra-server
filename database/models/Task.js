@@ -111,6 +111,12 @@ const TaskSchema = new Schema(
       type: Boolean,
       default: true,
     },
+    userStory: {
+      type: Schema.Types.ObjectId,
+      ref: "UserStory",
+      required: [true, "user story is required"],
+      autopopulate: true,
+    },
   },
   { timestamps: true, id: false, toJSON: { virtuals: true } }
 );

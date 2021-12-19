@@ -5,6 +5,7 @@ const Notification = require("../database/models/Notification");
 const Project = require("../database/models/Project");
 const Task = require("../database/models/Task");
 const User = require("../database/models/User");
+const UserStory = require("../database/models/UserStory");
 const { asyncMiddleware } = require("../middlewares/asyncMiddleware");
 const { ErrorResponse } = require("../models/ErrorResponse");
 const { SuccessResponse } = require("../models/SuccessResponse");
@@ -23,6 +24,7 @@ exports.createTask = asyncMiddleware(async (req, res, next) => {
     status,
     type,
     subtasks,
+    userStory,
   } = req.body;
   const existedProject = await Project.findById(project);
   if (!existedProject) return next(new ErrorResponse(404, "no project found"));
@@ -44,6 +46,7 @@ exports.createTask = asyncMiddleware(async (req, res, next) => {
     type,
     reporter: authUser._id,
     subtasks,
+    userStory,
   });
 
   const newTask = await task.save();
@@ -57,6 +60,11 @@ exports.createTask = asyncMiddleware(async (req, res, next) => {
   );
   await User.updateOne(
     { _id: authUser._id },
+    { $push: { tasks: newTask._id } }
+  );
+
+  await UserStory.updateOne(
+    { _id: userStory },
     { $push: { tasks: newTask._id } }
   );
 
@@ -372,6 +380,25 @@ exports.doneTask = asyncMiddleware(async (req, res, next) => {
   column.tasks = column.tasks.filter(t => t != taskId);
   const updatedColumn = await column.save();
 
+  const activity = new Activity({
+    content: `transitioned '${updatedTask.task_key} - ${updatedTask.name}' to "DONE".`,
+    subContent: null,
+    creator: authUser._id,
+    target_user: updatedTask.assignee._id,
+    project: updatedTask.project,
+  });
+
+  await activity.save();
+
+  const notification = new Notification({
+    sender: authUser._id,
+    content: `has done '${updatedTask.task_key} - ${updatedTask.name}'.Please review it`,
+    seen: false,
+    owner: updatedTask.reporter._id,
+  });
+
+  await notification.save();
+
   res.json(new SuccessResponse(200, { updatedTask, updatedColumn }));
 });
 
@@ -390,6 +417,25 @@ exports.resolvedTask = asyncMiddleware(async (req, res, next) => {
   task.isResolve = true;
   task.isWorking = false;
   const updatedTask = await task.save();
+
+  const activity = new Activity({
+    content: `transitioned '${updatedTask.task_key} - ${updatedTask.name}' to "RESOLVE".`,
+    subContent: null,
+    creator: authUser._id,
+    target_user: updatedTask.assignee._id,
+    project: updatedTask.project,
+  });
+
+  await activity.save();
+
+  const notification = new Notification({
+    sender: authUser._id,
+    content: `approved '${updatedTask.task_key} - ${updatedTask.name}'. Good work and keep up`,
+    seen: false,
+    owner: updatedTask.assignee._id,
+  });
+
+  await notification.save();
 
   res.json(new SuccessResponse(200, { updatedTask }));
 });
@@ -412,4 +458,49 @@ exports.closeTask = asyncMiddleware(async (req, res, next) => {
   const updatedTask = await task.save();
 
   res.json(new SuccessResponse(200, { updatedTask }));
+});
+
+exports.reopenTask = asyncMiddleware(async (req, res, next) => {
+  const authUser = req.user._doc;
+  const { taskId } = req.params;
+  const { reopenColumn } = req.body;
+
+  const task = await Task.findById(taskId);
+  const column = await Column.findById(reopenColumn);
+
+  if (task.isWorking)
+    return next(new ErrorResponse(400, "you can't re-open ongoing task"));
+
+  task.isDone = false;
+  task.isClose = false;
+  task.isResolve = false;
+  task.isWorking = true;
+  task.status = column._id;
+  const updatedTask = await task.save();
+
+  column.tasks.push(updatedTask._id);
+  const updatedColumn = await column.save();
+
+  const activity = new Activity({
+    content: `re-opened '${updatedTask.task_key} - ${updatedTask.name}'.`,
+    subContent: null,
+    creator: authUser._id,
+    target_user: updatedTask.assignee._id,
+    project: updatedTask.project,
+  });
+
+  await activity.save();
+
+  if (!authUser._id.equals(updatedTask.assignee._id)) {
+    const notification = new Notification({
+      sender: authUser._id,
+      content: `re-opened '${updatedTask.task_key} - ${updatedTask.name}'. Please work on it to see the problem`,
+      seen: false,
+      owner: updatedTask.assignee._id,
+    });
+
+    await notification.save();
+  }
+
+  res.json(new SuccessResponse(200, { updatedTask, updatedColumn }));
 });
