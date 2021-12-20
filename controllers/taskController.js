@@ -348,7 +348,7 @@ exports.toggleSubTaskStatus = asyncMiddleware(async (req, res, next) => {
 
   task.subtasks = [
     ...task._doc.subtasks.slice(0, subtaskIndex),
-    { ...subtask._doc, isDone: !subtask.isDone },
+    { ...subtask._doc, isDone: !subtask.isDone, isRejected: false },
     ...task._doc.subtasks.slice(subtaskIndex + 1),
   ];
 
@@ -457,6 +457,55 @@ exports.closeTask = asyncMiddleware(async (req, res, next) => {
   task.isWorking = false;
   const updatedTask = await task.save();
 
+  res.json(new SuccessResponse(200, { updatedTask }));
+});
+
+exports.toggleRejectSubTask = asyncMiddleware(async (req, res, next) => {
+  const authUser = req.user._doc;
+  const { subTaskId, taskId } = req.body;
+
+  const task = await Task.findById(taskId);
+
+  if (!authUser._id.equals(task.reporter._id))
+    return next(new ErrorResponse(403, "you don't have the permission"));
+  if (!task.isDone)
+    return next(new ErrorResponse(400, "this task is not done yet"));
+
+  const subtask = task.subtasks.find(st => st.id === subTaskId);
+  const subtaskIndex = task.subtasks.findIndex(st => st.id === subTaskId);
+  if (!subtask || subtaskIndex === -1)
+    return next(new ErrorResponse(404, "subtask not found"));
+
+  task.subtasks = [
+    ...task._doc.subtasks.slice(0, subtaskIndex),
+    {
+      ...subtask._doc,
+      isDone: !subtask.isDone,
+      isRejected: !subtask.isRejected,
+    },
+    ...task._doc.subtasks.slice(subtaskIndex + 1),
+  ];
+
+  const updatedTask = await task.save();
+  res.json(new SuccessResponse(200, { updatedTask }));
+});
+
+exports.addSubTask = asyncMiddleware(async (req, res, next) => {
+  const authUser = req.user._doc;
+  const { taskId } = req.params;
+  const { content } = req.body;
+
+  const task = await Task.findById(taskId);
+
+  if (!authUser._id.equals(task.reporter._id))
+    return next(new ErrorResponse(403, "you don't have the permission"));
+
+  task.subtasks.push({
+    id: task.subtasks.length + 1,
+    content,
+  });
+
+  const updatedTask = await task.save();
   res.json(new SuccessResponse(200, { updatedTask }));
 });
 

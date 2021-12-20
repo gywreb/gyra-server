@@ -12,9 +12,13 @@ const SprintSchema = new Schema(
       type: Date,
       required: [true, "sprint begin date is required"],
     },
-    end_date: {
-      type: Date,
-      required: [true, "sprint end date is required"],
+    duration: {
+      type: Number,
+      required: [true, "sprint duration is required"]
+    },
+    maxEst: {
+      type: Number,
+      default: null,
     },
     description: {
       type: String,

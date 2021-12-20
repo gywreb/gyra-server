@@ -93,6 +93,10 @@ const TaskSchema = new Schema(
           type: Boolean,
           default: false,
         },
+        isRejected: {
+          type: Boolean,
+          default: false,
+        },
       },
     ],
     isDone: {

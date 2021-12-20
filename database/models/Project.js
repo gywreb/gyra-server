@@ -100,6 +100,10 @@ const ProjectSchema = new Schema(
       type: Number,
       default: 0,
     },
+    lastSprintEndDate: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true, id: false, toJSON: { virtuals: true } }
 );
